@@ -24,4 +24,126 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    function searchRecommendations() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const resultDiv = document.getElementById('resultsContainer');
+        resultDiv.innerHTML = '';
+
+        if (query.trim() === '') {
+            return;
+        }
+
+        fetch('travel_recommendation_api.json')
+            .then(response => response.json())
+            .then(data => {
+                let results = [];
+                
+                // Search in countries/cities
+                data.countries.forEach(country => {
+                    country.cities.forEach(city => {
+                        if (city.name.toLowerCase().includes(query) || 
+                            city.description.toLowerCase().includes(query) ||
+                            country.name.toLowerCase().includes(query)) {
+                            results.push({
+                                name: city.name,
+                                imageUrl: city.imageUrl,
+                                description: city.description,
+                                type: 'City'
+                            });
+                        }
+                    });
+                });
+                
+                // Search in temples
+                data.temples.forEach(temple => {
+                    if (temple.name.toLowerCase().includes(query) || 
+                        temple.description.toLowerCase().includes(query)) {
+                        results.push({
+                            name: temple.name,
+                            imageUrl: temple.imageUrl,
+                            description: temple.description,
+                            type: 'Temple'
+                        });
+                    }
+                });
+                
+                // Search in beaches
+                data.beaches.forEach(beach => {
+                    if (beach.name.toLowerCase().includes(query) || 
+                        beach.description.toLowerCase().includes(query)) {
+                        results.push({
+                            name: beach.name,
+                            imageUrl: beach.imageUrl,
+                            description: beach.description,
+                            type: 'Beach'
+                        });
+                    }
+                });
+                
+                displayResults(results);
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+                resultDiv.innerHTML = '<p>Error loading recommendations. Please try again.</p>';
+            });
+    }
+
+    function displayResults(results) {
+        const resultDiv = document.getElementById('resultsContainer');
+        
+        if (results.length === 0) {
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<p>No recommendations found. Try a different search term.</p>';
+            return;
+        }
+        
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '';
+        results.forEach(result => {
+            const resultItem = document.createElement('div');
+            resultItem.className = 'result-item';
+            resultItem.innerHTML = `
+                <img src="${result.imageUrl}" alt="${result.name}">
+                <h3>${result.name}</h3>
+                <p class="result-type">Type: ${result.type}</p>
+                <p class="result-description">${result.description}</p>
+            `;
+            resultDiv.appendChild(resultItem);
+        });
+    }
+
+    function clearResults() {
+        const resultDiv = document.getElementById('resultsContainer');
+        const searchInput = document.getElementById('searchInput');
+        resultDiv.innerHTML = '';
+        resultDiv.style.display = 'none';
+        searchInput.value = '';
+    }
+
+    // Make functions globally accessible
+    window.searchRecommendations = searchRecommendations;
+    window.clearResults = clearResults;
+
+    // Add event listeners for search and reset buttons
+    const searchButton = document.getElementById('searchBtn');
+    const resetButton = document.getElementById('resetBtn');
+    const searchInput = document.getElementById('searchInput');
+
+    if (searchButton) {
+        searchButton.addEventListener('click', searchRecommendations);
+    }
+
+    if (resetButton) {
+        resetButton.addEventListener('click', clearResults);
+    }
+
+    // Allow search on Enter key press
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                searchRecommendations();
+            }
+        });
+    }
 });
